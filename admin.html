@@ -108,12 +108,12 @@
     }
 
     function randChar(){ return CHARS.charAt(Math.floor(Math.random()*CHARS.length)); }
-    function makeCode(){ 
+    function makeCode(){
       return GROUPS.map(len=>{
         let s='';
         for(let i=0;i<len;i++) s+=randChar();
         return s;
-      }).join(SEP); 
+      }).join(SEP);
     }
     function msUntil(ts){ return Math.max(0, (ts||0) - Date.now()); }
     function formatTimeLeft(ms){ const sec = Math.floor(ms/1000); const m = Math.floor(sec/60); const s = sec % 60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
@@ -145,28 +145,39 @@
       listEl.innerHTML = '';
       clearTimers();
       if(!obj) return;
-      const entries = Object.entries(obj).filter(([k,v]) => v && typeof v === 'object').sort((a,b)=> (b[1]?.createdAt||0) - (a[1]?.createdAt||0));
+      const entries = Object.entries(obj)
+        .filter(([k,v]) => v && typeof v === 'object')
+        .sort((a,b)=> (b[1]?.createdAt||0) - (a[1]?.createdAt||0));
+
       for(const [dbKey, data] of entries){
         const row = document.createElement('div');
         row.className = 'item';
         row.dataset.key = dbKey;
+
         const left = document.createElement('div');
         left.className = 'rowLeft';
+
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.className = 'checkbox' + (selectMode ? ' active' : '');
         cb.addEventListener('change', updateDeleteSelectedState);
+
         const nm = document.createElement('div');
         nm.className = 'name';
-        nm.textContent = data.name || dbKey;
+        // <<< YANGILANGAN QATOR: maska o‘rniga aniq kod ko‘rsatamiz
+        nm.textContent = data.code || data.name || dbKey;
+
         left.appendChild(cb);
         left.appendChild(nm);
+
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copyBtn';
         copyBtn.textContent = 'Copy';
         copyBtn.addEventListener('click', ()=> copyCode(data.code));
+
         const timer = document.createElement('div');
         timer.className = 'timer';
+
         const ms = msUntil(data.expiresAt);
         if(ms <= 0){
           timer.textContent = 'Expired';
@@ -187,6 +198,7 @@
           }, 1000);
           liveTimers.set(dbKey, tid);
         }
+
         row.appendChild(left);
         row.appendChild(copyBtn);
         row.appendChild(timer);
@@ -195,7 +207,9 @@
     }
 
     function getSelectedNames(){
-      return [...listEl.querySelectorAll('.item')].filter(r => r.querySelector('.checkbox').checked).map(r => r.dataset.key);
+      return [...listEl.querySelectorAll('.item')]
+        .filter(r => r.querySelector('.checkbox').checked)
+        .map(r => r.dataset.key);
     }
 
     function updateDeleteSelectedState(){
@@ -225,8 +239,8 @@
         let code = makeCode();
         while(existing[code]){ code = makeCode(); }
         existing[code] = true;
-        const display = autoName(i+1);
-        const data = { name: display, code, createdAt, expiresAt };
+        // <<< YANGILANGAN QATORLAR: name ham kodning o‘zi bo‘ladi
+        const data = { name: code, code, createdAt, expiresAt };
         await dbPut(`users/${encodeURIComponent(code)}`, data);
       }
       const fresh = await dbGet('users');
@@ -236,7 +250,9 @@
     }
 
     async function deleteSelected(){
-      for(const k of getSelectedNames()){ await dbDelete(`users/${encodeURIComponent(k)}`); }
+      for(const k of getSelectedNames()){
+        await dbDelete(`users/${encodeURIComponent(k)}`);
+      }
       renderList(await dbGet('users'));
     }
 
@@ -257,7 +273,9 @@
       const rows = [...listEl.querySelectorAll('.item')];
       if(rows.length === 0){ showToast('No keys'); return; }
       let text = '';
-      rows.forEach((r, idx) => { text += `Kay_${idx+1} ${r.dataset.key}\n`; });
+      rows.forEach((r, idx) => {
+        text += `Kay_${idx+1} ${r.dataset.key}\n`;
+      });
       try{
         await navigator.clipboard.writeText(text.trim());
         showToast('All keys copied');
@@ -289,4 +307,5 @@
     (async function init(){ await purgeExpired(); })();
   </script>
 </body>
-      </html>
+  </html>
+          
